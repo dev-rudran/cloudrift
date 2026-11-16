@@ -1,0 +1,56 @@
+policies:
+  - id: CLDR-0027
+    title: SQS queue is not encrypted
+    description: >-
+      The queue has neither a KMS key nor SQS-managed server-side encryption,
+      so message bodies are stored unencrypted.
+    severity: medium
+    provider: aws
+    resource: aws_sqs_queue
+    assert: resource.kms_master_key_id is not None or resource.sqs_managed_sse_enabled is True
+    message: SQS queue {name} does not enable server-side encryption.
+    remediation: >-
+      Set sqs_managed_sse_enabled = true, or provide kms_master_key_id with a
+      key policy that restricts producers and consumers.
+    references:
+      - https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-server-side-encryption.html
+    tags: [sqs, messaging, encryption]
+
+  - id: CLDR-0028
+    title: SNS topic is not encrypted
+    description: >-
+      The topic has no KMS key, so published messages are stored without
+      server-side encryption.
+    severity: medium
+    provider: aws
+    resource: aws_sns_topic
+    assert: resource.kms_master_key_id is not None
+    message: SNS topic {name} does not set kms_master_key_id.
+    remediation: >-
+      Set kms_master_key_id to a customer managed key and grant publish and
+      subscribe permissions in the key policy.
+    references:
+      - https://docs.aws.amazon.com/sns/latest/dg/sns-server-side-encryption.html
+    tags: [sns, messaging, encryption]
+
+  - id: CLDR-0030
+    title: Secrets Manager secret has no rotation
+    description: >-
+      No aws_secretsmanager_secret_rotation resource targets the secret, so the
+      stored credential is never automatically rotated.
+    severity: medium
+    provider: aws
+    resource: aws_secretsmanager_secret
+    relations:
+      - type: aws_secretsmanager_secret_rotation
+        reference: true
+        via: name
+        target: secret_id
+    assert: len(related) > 0
+    message: Secrets Manager secret {name} has no rotation configuration.
+    remediation: >-
+      Add an aws_secretsmanager_secret_rotation with a rotation Lambda for the
+      database or service, and verify rotation succeeds in CloudWatch logs.
+    references:
+      - https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets.html
+    tags: [secretsmanager, secrets, rotation]

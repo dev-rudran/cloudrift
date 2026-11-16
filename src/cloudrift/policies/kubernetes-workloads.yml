@@ -1,0 +1,267 @@
+policies:
+  - id: CLDR-1001
+    title: Container runs in privileged mode
+    description: >-
+      A container sets securityContext.privileged = true. Privileged containers
+      share the host kernel capabilities and can escape isolation.
+    severity: critical
+    provider: kubernetes
+    resource: &workloads
+      - kubernetes_pod
+      - kubernetes_deployment
+      - kubernetes_stateful_set
+      - kubernetes_daemon_set
+      - kubernetes_replica_set
+      - kubernetes_replication_controller
+      - kubernetes_job
+      - kubernetes_cron_job
+    location: &container_locations
+      - spec.template.spec.containers
+      - spec.containers
+      - spec.jobTemplate.spec.template.spec.containers
+    assert: not any(container.securityContext.privileged is True for container in resource.containers)
+    message: Workload {address} runs a privileged container.
+    remediation: >-
+      Remove privileged: true. Grant only the specific Linux capabilities the
+      workload needs and keep allowPrivilegeEscalation false.
+    references:
+      - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+    tags: [kubernetes, pod-security, privileged, cis-k8s-5.2.1]
+
+  - id: CLDR-1002
+    title: Container allows privilege escalation
+    description: >-
+      allowPrivilegeEscalation is not explicitly false. A process can gain more
+      privileges than its parent, for example through setuid binaries.
+    severity: high
+    provider: kubernetes
+    resource: *workloads
+    location: *container_locations
+    assert: all(container.securityContext.allowPrivilegeEscalation is False for container in resource.containers)
+    message: Workload {address} does not set allowPrivilegeEscalation = false.
+    remediation: >-
+      Set securityContext.allowPrivilegeEscalation = false on every container,
+      including init containers.
+    references:
+      - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+    tags: [kubernetes, pod-security, privilege-escalation, cis-k8s-5.2.5]
+
+  - id: CLDR-1003
+    title: Container may run as root
+    description: >-
+      Neither the pod nor every container sets runAsNonRoot = true, so the
+      workload may run as UID 0.
+    severity: medium
+    provider: kubernetes
+    resource: *workloads
+    location: *container_locations
+    assert: >-
+      resource.pod_spec.securityContext.runAsNonRoot is True
+      or all(container.securityContext.runAsNonRoot is True for container in resource.containers)
+    message: Workload {address} does not guarantee runAsNonRoot = true.
+    remediation: >-
+      Set securityContext.runAsNonRoot = true and a numeric runAsUser at the
+      pod level, then verify the image supports a non-root user.
+    references:
+      - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+    tags: [kubernetes, pod-security, root, cis-k8s-5.2.6]
+
+  - id: CLDR-1004
+    title: Container adds dangerous Linux capabilities
+    description: >-
+      A container adds SYS_ADMIN, NET_ADMIN, SYS_PTRACE, or SYS_MODULE. These
+      capabilities enable host-level network, mount, or kernel manipulation.
+    severity: high
+    provider: kubernetes
+    resource: *workloads
+    location: *container_locations
+    assert: >-
+      not any(
+        capability in ("SYS_ADMIN", "NET_ADMIN", "SYS_PTRACE", "SYS_MODULE")
+        for container in resource.containers
+        for capability in (container.securityContext.capabilities.add or [])
+      )
+    message: Workload {address} adds a dangerous Linux capability.
+    remediation: >-
+      Drop ALL capabilities and add back only those required, for example
+      NET_BIND_SERVICE. Avoid SYS_ADMIN and NET_ADMIN in application pods.
+    references:
+      - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+    tags: [kubernetes, pod-security, capabilities, cis-k8s-5.2.7]
+
+  - id: CLDR-1005
+    title: Pod mounts a hostPath volume
+    description: >-
+      A hostPath volume exposes a node filesystem path to the pod, allowing
+      reads or writes outside the container filesystem.
+    severity: high
+    provider: kubernetes
+    resource: *workloads
+    location:
+      - spec.template.spec.volumes
+      - spec.volumes
+      - spec.jobTemplate.spec.template.spec.volumes
+    assert: not any(volume.hostPath is not None for volume in (resource.pod_spec.volumes or []))
+    message: Workload {address} mounts a hostPath volume.
+    remediation: >-
+      Use a PersistentVolumeClaim, projected token, or CSI volume. If hostPath
+      is unavoidable, mount a read-only path with a narrow pathType.
+    references:
+      - https://kubernetes.io/docs/concepts/storage/volumes/#hostpath
+    tags: [kubernetes, pod-security, hostpath, cis-k8s-5.2.12]
+
+  - id: CLDR-1006
+    title: Pod shares a host namespace
+    description: >-
+      The pod sets hostNetwork, hostPID, or hostIPC. Sharing host namespaces
+      breaks workload isolation and exposes node processes or traffic.
+    severity: high
+    provider: kubernetes
+    resource: *workloads
+    assert: >-
+      not (
+        resource.pod_spec.hostNetwork is True
+        or resource.pod_spec.hostPID is True
+        or resource.pod_spec.hostIPC is True
+      )
+    message: Workload {address} enables a host network, PID, or IPC namespace.
+    remediation: >-
+      Remove hostNetwork, hostPID, and hostIPC. Use a Service or CNI policy for
+      host-level networking rather than sharing the node namespace.
+    references:
+      - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+    tags: [kubernetes, pod-security, isolation, cis-k8s-5.2.2]
+
+  - id: CLDR-1007
+    title: Container image uses a mutable tag
+    description: >-
+      An image has no tag, uses latest, or has an empty tag. Deployments are not
+      reproducible and may silently pick up a different image.
+    severity: medium
+    provider: kubernetes
+    resource: *workloads
+    location: *container_locations
+    assert: >-
+      not any(
+        container.image is None or image_tag(container.image) in ("", "latest")
+        for container in resource.containers
+      )
+    message: Workload {address} uses an unpinned or latest image tag.
+    remediation: >-
+      Pin images to an immutable version tag or digest, for example
+      ghcr.io/org/app:1.8.2 or app@sha256:... . Avoid latest in deployments.
+    references:
+      - https://kubernetes.io/docs/concepts/configuration/overview/#container-images
+    tags: [kubernetes, supply-chain, images, cis-k8s-5.4.1]
+
+  - id: CLDR-1008
+    title: Container has no CPU or memory limits
+    description: >-
+      A container does not set both CPU and memory limits. Unbounded workloads
+      can starve other pods and destabilize the node.
+    severity: medium
+    provider: kubernetes
+    resource: *workloads
+    location: *container_locations
+    assert: >-
+      all(
+        container.resources.limits.cpu is not None
+        and container.resources.limits.memory is not None
+        for container in resource.containers
+      )
+    message: Workload {address} has a container without CPU or memory limits.
+    remediation: >-
+      Set resources.limits.cpu and resources.limits.memory for every container,
+      and matching requests to support scheduling and QoS.
+    references:
+      - https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+    tags: [kubernetes, reliability, resources]
+
+  - id: CLDR-1009
+    title: Resource uses the default namespace
+    description: >-
+      The resource is in the default namespace, which usually has no dedicated
+      quotas, network policy, or RBAC boundary.
+    severity: low
+    provider: kubernetes
+    resource: kubernetes_*
+    assert: resource.namespace != "default"
+    message: Resource {address} is deployed in the default namespace.
+    remediation: >-
+      Use a dedicated namespace with resource quotas, NetworkPolicy, and
+      least-privilege RoleBindings.
+    references:
+      - https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+    tags: [kubernetes, governance, namespace]
+
+  - id: CLDR-1010
+    title: Service account token is auto-mounted
+    description: >-
+      automountServiceAccountToken is true, so the pod or service account
+      injects an API token that may not be needed.
+    severity: medium
+    provider: kubernetes
+    resource:
+      - kubernetes_pod
+      - kubernetes_deployment
+      - kubernetes_stateful_set
+      - kubernetes_daemon_set
+      - kubernetes_replica_set
+      - kubernetes_replication_controller
+      - kubernetes_job
+      - kubernetes_cron_job
+      - kubernetes_service_account
+    assert: >-
+      not (
+        resource.pod_spec.automountServiceAccountToken is True
+        or resource.automountServiceAccountToken is True
+      )
+    message: Resource {address} auto-mounts a service account token.
+    remediation: >-
+      Set automountServiceAccountToken = false at the pod and service account
+      level, and mount a projected token only for workloads that call the API.
+    references:
+      - https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+    tags: [kubernetes, rbac, tokens, cis-k8s-5.1.6]
+
+  - id: CLDR-1015
+    title: Container disables seccomp confinement
+    description: >-
+      The pod or container sets seccompProfile.type = Unconfined, allowing the
+      full syscall surface.
+    severity: medium
+    provider: kubernetes
+    resource: *workloads
+    assert: >-
+      not (
+        resource.pod_spec.securityContext.seccompProfile.type == "Unconfined"
+        or any(
+          container.securityContext.seccompProfile.type == "Unconfined"
+          for container in resource.containers
+        )
+      )
+    message: Workload {address} sets seccompProfile.type = Unconfined.
+    remediation: >-
+      Set seccompProfile.type = RuntimeDefault at the pod level, or a custom
+      profile that blocks unused syscalls.
+    references:
+      - https://kubernetes.io/docs/tutorials/security/seccomp/
+    tags: [kubernetes, pod-security, seccomp, cis-k8s-5.7.2]
+
+  - id: CLDR-1016
+    title: Container root filesystem is writable
+    description: >-
+      readOnlyRootFilesystem is not true. A writable root filesystem lets an
+      attacker persist tools or modify application files.
+    severity: low
+    provider: kubernetes
+    resource: *workloads
+    location: *container_locations
+    assert: all(container.securityContext.readOnlyRootFilesystem is True for container in resource.containers)
+    message: Workload {address} has a container with a writable root filesystem.
+    remediation: >-
+      Set readOnlyRootFilesystem = true and mount emptyDir volumes for paths
+      that must be writable, such as /tmp or cache directories.
+    references:
+      - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+    tags: [kubernetes, pod-security, filesystem, cis-k8s-5.2.4]

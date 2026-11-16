@@ -1,0 +1,89 @@
+policies:
+  - id: CLDR-0011
+    title: IAM policy allows wildcard actions
+    description: >-
+      An Allow statement grants an action containing a wildcard. Wildcards make
+      privilege review difficult and usually exceed least privilege.
+    severity: high
+    provider: aws
+    resource: &iam_policies
+      - aws_iam_policy
+      - aws_iam_role_policy
+      - aws_iam_user_policy
+      - aws_iam_group_policy
+    assert: not iam_wildcard_action(resource.policy)
+    message: IAM policy {name} grants a wildcard action.
+    remediation: >-
+      Enumerate the specific actions the workload needs. Split broad policies
+      into purpose-specific statements with narrow actions and resources.
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
+    tags: [iam, least-privilege, cis-aws-1.16]
+
+  - id: CLDR-0012
+    title: IAM policy allows all resources
+    description: >-
+      An Allow statement targets every resource with Resource "*". The policy
+      cannot be scoped or audited per resource.
+    severity: medium
+    provider: aws
+    resource: *iam_policies
+    assert: not iam_wildcard_resource(resource.policy)
+    message: IAM policy {name} uses Resource "*" in an Allow statement.
+    remediation: >-
+      Scope Resource to the specific ARNs, or use wildcards only in the final
+      path segment with a restrictive condition.
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
+    tags: [iam, least-privilege, cis-aws-1.16]
+
+  - id: CLDR-0013
+    title: IAM policy grants full administrative access
+    description: >-
+      An Allow statement combines Action "*" with Resource "*", granting full
+      administrative access to the identity.
+    severity: critical
+    provider: aws
+    resource: *iam_policies
+    assert: not iam_allow_all(resource.policy)
+    message: IAM policy {name} contains an Allow * on * statement.
+    remediation: >-
+      Remove the statement. For break-glass administration, use a dedicated
+      role with MFA, session duration limits, and an approval workflow.
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
+    tags: [iam, least-privilege, privilege-escalation]
+
+  - id: CLDR-0014
+    title: Root account access key is declared
+    description: >-
+      The access key is associated with the root user. Root access keys cannot
+      be scoped and are strongly discouraged by AWS.
+    severity: critical
+    provider: aws
+    resource: aws_iam_access_key
+    assert: resource.user != "root"
+    message: Access key {name} is attached to the root user.
+    remediation: >-
+      Delete root access keys. Use IAM roles, identity federation, or IAM users
+      with least-privilege policies and MFA.
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html
+    tags: [iam, credentials, cis-aws-1.4]
+
+  - id: CLDR-0015
+    title: IAM access key is older than 90 days
+    description: >-
+      The access key creation date is more than 90 days ago. Long-lived keys
+      increase exposure when credentials leak.
+    severity: medium
+    provider: aws
+    resource: aws_iam_access_key
+    assert: age_days(resource.create_date) <= 90
+    message: Access key {name} has not been rotated within 90 days.
+    remediation: >-
+      Rotate the key: create a replacement, deploy it, verify, then deactivate
+      and delete the old key. Prefer short-lived role credentials.
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
+    tags: [iam, credentials, rotation, cis-aws-1.14]

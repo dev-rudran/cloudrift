@@ -1,0 +1,34 @@
+policies:
+  - id: CLDR-0021
+    title: CloudTrail logging is disabled
+    description: >-
+      The trail does not enable logging. API activity in the account is not
+      recorded, removing the primary audit trail.
+    severity: high
+    provider: aws
+    resource: aws_cloudtrail
+    assert: resource.enable_logging is True
+    message: CloudTrail {name} does not set enable_logging = true.
+    remediation: >-
+      Set enable_logging = true and deliver events to a dedicated, immutable
+      S3 bucket with object lock and least-privilege access.
+    references:
+      - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-create-and-update-a-trail.html
+    tags: [cloudtrail, logging, audit, cis-aws-3.1]
+
+  - id: CLDR-0022
+    title: CloudTrail trail is not multi-region
+    description: >-
+      The trail is not configured as a multi-region trail, so activity in other
+      regions is not captured.
+    severity: low
+    provider: aws
+    resource: aws_cloudtrail
+    assert: resource.is_multi_region_trail is True
+    message: CloudTrail {name} is not a multi-region trail.
+    remediation: >-
+      Set is_multi_region_trail = true. Use an organization trail to cover all
+      accounts in the organization.
+    references:
+      - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/receive-cloudtrail-log-files-from-multiple-regions.html
+    tags: [cloudtrail, logging, audit]

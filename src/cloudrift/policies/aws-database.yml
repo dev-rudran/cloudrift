@@ -1,0 +1,69 @@
+policies:
+  - id: CLDR-0016
+    title: RDS instance is publicly accessible
+    description: >-
+      The database instance has publicly_accessible enabled, giving it a public
+      endpoint reachable from the internet if security groups allow it.
+    severity: critical
+    provider: aws
+    resource: aws_db_instance
+    assert: resource.publicly_accessible is not True
+    message: RDS instance {name} is publicly accessible.
+    remediation: >-
+      Set publicly_accessible = false, place the instance in private subnets,
+      and restrict its security group to application sources.
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html
+    tags: [rds, database, public-access, cis-aws-2.3.2]
+
+  - id: CLDR-0017
+    title: RDS storage is not encrypted
+    description: >-
+      The database instance does not enable storage encryption. Backups and
+      snapshots inherit the unencrypted state.
+    severity: high
+    provider: aws
+    resource: aws_db_instance
+    assert: resource.storage_encrypted is True
+    message: RDS instance {name} does not set storage_encrypted = true.
+    remediation: >-
+      Enable storage encryption with a KMS key. Enabling encryption on an
+      existing instance requires a snapshot restore into a new encrypted
+      instance.
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html
+    tags: [rds, database, encryption, cis-aws-2.3.1]
+
+  - id: CLDR-0018
+    title: RDS automated backups are disabled
+    description: >-
+      backup_retention_period is 0, so automated backups and point-in-time
+      recovery are unavailable.
+    severity: medium
+    provider: aws
+    resource: aws_db_instance
+    assert: to_int(resource.backup_retention_period) > 0
+    message: RDS instance {name} has automated backups disabled.
+    remediation: >-
+      Set backup_retention_period to at least 7 days (30 for production) and
+      verify the backup window and retention in the DR plan.
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html
+    tags: [rds, database, backup, resilience]
+
+  - id: CLDR-0019
+    title: RDS deletion protection is disabled
+    description: >-
+      deletion_protection is not enabled, allowing an accidental destroy or
+      API call to delete the database.
+    severity: low
+    provider: aws
+    resource: aws_db_instance
+    assert: resource.deletion_protection is True
+    message: RDS instance {name} does not enable deletion protection.
+    remediation: >-
+      Set deletion_protection = true for stateful databases. Remove it only
+      during an approved decommission.
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_DeleteInstance.html
+    tags: [rds, database, resilience]

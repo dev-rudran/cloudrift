@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudrift"
+version = "0.1.0"
+description = "Policy-as-code misconfiguration scanner for Terraform and Kubernetes"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Rudra Tushir", email = "rudraking2404@gmail.com" }]
+keywords = ["security", "terraform", "kubernetes", "policy-as-code", "sarif", "iac"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.6",
+    "bandit>=1.7",
+    "build>=1.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/dev-rudran/cloudrift"
+Repository = "https://github.com/dev-rudran/cloudrift"
+Issues = "https://github.com/dev-rudran/cloudrift/issues"
+Security = "https://github.com/dev-rudran/cloudrift/security/policy"
+
+[project.scripts]
+cloudrift = "cloudrift.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cloudrift = ["policies/*.yml", "py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["cloudrift"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "SIM"]
+ignore = ["SIM108"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples", "build", "dist"]

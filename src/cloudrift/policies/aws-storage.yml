@@ -1,0 +1,123 @@
+policies:
+  - id: CLDR-0001
+    title: S3 bucket ACL grants public access
+    description: >-
+      The bucket uses a canned ACL that grants anonymous or authenticated public
+      access. Public S3 buckets are a common source of data exposure.
+    severity: critical
+    provider: aws
+    resource: aws_s3_bucket
+    assert: resource.acl not in ("public-read", "public-read-write", "website")
+    message: >-
+      S3 bucket {name} uses an ACL that grants public access. Anonymous or
+      cross-account readers may be able to list or read objects.
+    remediation: >-
+      Set acl = "private" and remove public grants. Use bucket policies with
+      explicit principals and conditions when sharing is required.
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html
+    tags: [s3, storage, public-access, cis-aws-2.1.5]
+
+  - id: CLDR-0002
+    title: S3 bucket policy allows a public principal
+    description: >-
+      A bucket policy statement allows actions to a wildcard principal without a
+      restrictive condition, exposing the bucket to the internet.
+    severity: critical
+    provider: aws
+    resource: aws_s3_bucket_policy
+    assert: not iam_public_principal(resource.policy)
+    message: >-
+      The bucket policy for {name} contains an Allow statement for Principal "*"
+      without a Condition.
+    remediation: >-
+      Restrict Principal to known accounts, roles, or services, and add
+      conditions such as aws:SourceVpce or aws:PrincipalOrgID.
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html
+    tags: [s3, storage, public-access, iam]
+
+  - id: CLDR-0003
+    title: S3 bucket has no default encryption
+    description: >-
+      The bucket does not define server-side encryption. Objects are stored
+      without the organization's encryption baseline.
+    severity: high
+    provider: aws
+    resource: aws_s3_bucket
+    assert: len(resource.server_side_encryption_configuration or []) > 0
+    message: S3 bucket {name} has no server_side_encryption_configuration block.
+    remediation: >-
+      Configure a server_side_encryption_configuration rule with AES256 or
+      aws:kms, or enable default encryption on the bucket.
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html
+    tags: [s3, storage, encryption, cis-aws-2.1.1]
+
+  - id: CLDR-0004
+    title: S3 bucket versioning is disabled
+    description: >-
+      Versioning is not enabled on the bucket, so overwritten or deleted objects
+      cannot be recovered.
+    severity: medium
+    provider: aws
+    resource: aws_s3_bucket
+    assert: any(block.enabled is True for block in (resource.versioning or []))
+    message: S3 bucket {name} does not enable versioning.
+    remediation: >-
+      Add a versioning block with enabled = true, and consider lifecycle rules
+      to expire old noncurrent versions.
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html
+    tags: [s3, storage, resilience, cis-aws-2.1.3]
+
+  - id: CLDR-0005
+    title: S3 bucket access logging is disabled
+    description: >-
+      Server access logging is not configured, which removes the audit trail for
+      object-level access.
+    severity: low
+    provider: aws
+    resource: aws_s3_bucket
+    assert: len(resource.logging or []) > 0
+    message: S3 bucket {name} has no logging block.
+    remediation: >-
+      Add a logging block that targets a dedicated, access-controlled log
+      bucket, or enable CloudTrail data events for the bucket.
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerLogs.html
+    tags: [s3, storage, logging]
+
+  - id: CLDR-0020
+    title: EBS volume is unencrypted
+    description: >-
+      The EBS volume is created without encryption, exposing data at rest to
+      anyone who can snapshot or attach the volume.
+    severity: high
+    provider: aws
+    resource: aws_ebs_volume
+    assert: resource.encrypted is True
+    message: EBS volume {name} does not set encrypted = true.
+    remediation: >-
+      Set encrypted = true and use a customer managed KMS key. Enable EBS
+      encryption by default in every region.
+    references:
+      - https://docs.aws.amazon.com/ebs/latest/userguide/encryption.html
+    tags: [ebs, storage, encryption]
+
+  - id: CLDR-0023
+    title: KMS key rotation is disabled
+    description: >-
+      Automatic key rotation is disabled for the customer managed KMS key,
+      increasing the lifetime and blast radius of a compromised key.
+    severity: medium
+    provider: aws
+    resource: aws_kms_key
+    assert: resource.enable_key_rotation is True
+    message: KMS key {name} does not enable automatic rotation.
+    remediation: >-
+      Set enable_key_rotation = true. Annual rotation is the AWS default
+      schedule and requires no application changes.
+    references:
+      - https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html
+    tags: [kms, encryption, key-management]

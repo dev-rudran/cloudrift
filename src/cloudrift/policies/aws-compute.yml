@@ -1,0 +1,45 @@
+policies:
+  - id: CLDR-0025
+    title: Lambda environment contains a secret-like value
+    description: >-
+      A Lambda environment variable name suggests a credential and has a
+      non-empty literal value. Environment variables are visible to anyone with
+      lambda:GetFunctionConfiguration.
+    severity: high
+    provider: aws
+    resource: aws_lambda_function
+    assert: >-
+      not any(
+        regex_match(name, "(?i)(password|passwd|secret|token|api[_-]?key|credential)")
+        and value
+        for name, value in items(
+          get(resource, "environment.0.variables", {})
+          or get(resource, "environment.variables", {})
+          or {}
+        )
+      )
+    message: Lambda function {name} stores a secret-like value in an environment variable.
+    remediation: >-
+      Store secrets in AWS Secrets Manager or SSM Parameter Store and fetch them
+      at runtime with an execution role. Rotate any value that was committed.
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html
+    tags: [lambda, secrets, credentials]
+
+  - id: CLDR-0029
+    title: ECR repository does not scan images on push
+    description: >-
+      Image scanning is disabled, so pushed images are not checked for known
+      vulnerabilities.
+    severity: medium
+    provider: aws
+    resource: aws_ecr_repository
+    assert: any(config.scan_on_push is True for config in (resource.image_scanning_configuration or []))
+    message: ECR repository {name} does not enable scan_on_push.
+    remediation: >-
+      Set image_scanning_configuration { scan_on_push = true } and configure
+      scan findings to gate deployment. Consider registry-level scanning
+      configuration for all repositories.
+    references:
+      - https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html
+    tags: [ecr, containers, vulnerability-management]

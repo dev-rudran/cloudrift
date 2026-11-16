@@ -1,0 +1,1050 @@
+CLDR-0001:
+  vulnerable:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values:
+      acl: public-read
+  compliant:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values:
+      acl: private
+CLDR-0002:
+  vulnerable:
+  - provider: aws
+    type: aws_s3_bucket_policy
+    name: logs
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": "*", "Action":
+        "s3:GetObject", "Resource": "*"}]}'
+  compliant:
+  - provider: aws
+    type: aws_s3_bucket_policy
+    name: logs
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::111122223333:role/audit"},
+        "Action": "s3:GetObject", "Resource": "arn:aws:s3:::logs/*"}]}'
+CLDR-0003:
+  vulnerable:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values:
+      bucket: logs
+  compliant:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values:
+      server_side_encryption_configuration:
+      - rule:
+        - apply_server_side_encryption_by_default:
+          - sse_algorithm: AES256
+CLDR-0004:
+  vulnerable:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values:
+      versioning:
+      - enabled: false
+  compliant:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values:
+      versioning:
+      - enabled: true
+CLDR-0005:
+  vulnerable:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values: {}
+  compliant:
+  - provider: aws
+    type: aws_s3_bucket
+    name: logs
+    values:
+      logging:
+      - target_bucket: audit
+        target_prefix: logs/
+CLDR-0006:
+  vulnerable:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 22
+        to_port: 22
+        protocol: tcp
+        cidr_blocks:
+        - 0.0.0.0/0
+        ipv6_cidr_blocks: []
+  compliant:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 22
+        to_port: 22
+        protocol: tcp
+        cidr_blocks:
+        - 10.0.0.0/8
+        ipv6_cidr_blocks: []
+CLDR-0007:
+  vulnerable:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 3389
+        to_port: 3389
+        protocol: tcp
+        cidr_blocks:
+        - 0.0.0.0/0
+        ipv6_cidr_blocks: []
+  compliant:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 3389
+        to_port: 3389
+        protocol: tcp
+        cidr_blocks:
+        - 10.0.0.0/8
+        ipv6_cidr_blocks: []
+CLDR-0008:
+  vulnerable:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 3306
+        to_port: 3306
+        protocol: tcp
+        cidr_blocks:
+        - 0.0.0.0/0
+        ipv6_cidr_blocks: []
+  compliant:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 3306
+        to_port: 3306
+        protocol: tcp
+        cidr_blocks:
+        - 10.0.0.0/8
+        ipv6_cidr_blocks: []
+CLDR-0009:
+  vulnerable:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 5432
+        to_port: 5432
+        protocol: tcp
+        cidr_blocks:
+        - 0.0.0.0/0
+        ipv6_cidr_blocks: []
+  compliant:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 5432
+        to_port: 5432
+        protocol: tcp
+        cidr_blocks:
+        - 10.0.0.0/8
+        ipv6_cidr_blocks: []
+CLDR-0010:
+  vulnerable:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 0
+        to_port: 65535
+        protocol: tcp
+        cidr_blocks:
+        - 0.0.0.0/0
+  compliant:
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      ingress:
+      - from_port: 443
+        to_port: 443
+        protocol: tcp
+        cidr_blocks:
+        - 10.0.0.0/8
+CLDR-0011:
+  vulnerable:
+  - provider: aws
+    type: aws_iam_policy
+    name: app
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "s3:*", "Resource":
+        "arn:aws:s3:::assets/*"}]}'
+  compliant:
+  - provider: aws
+    type: aws_iam_policy
+    name: app
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "s3:GetObject", "Resource":
+        "arn:aws:s3:::assets/*"}]}'
+CLDR-0012:
+  vulnerable:
+  - provider: aws
+    type: aws_iam_policy
+    name: app
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "s3:GetObject", "Resource":
+        "*"}]}'
+  compliant:
+  - provider: aws
+    type: aws_iam_policy
+    name: app
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "s3:GetObject", "Resource":
+        "arn:aws:s3:::assets/*"}]}'
+CLDR-0013:
+  vulnerable:
+  - provider: aws
+    type: aws_iam_policy
+    name: admin
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "*", "Resource":
+        "*"}]}'
+  compliant:
+  - provider: aws
+    type: aws_iam_policy
+    name: admin
+    values:
+      policy: '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": ["s3:GetObject"],
+        "Resource": "arn:aws:s3:::assets/*"}]}'
+CLDR-0014:
+  vulnerable:
+  - provider: aws
+    type: aws_iam_access_key
+    name: root
+    values:
+      user: root
+  compliant:
+  - provider: aws
+    type: aws_iam_access_key
+    name: deploy
+    values:
+      user: deploy
+CLDR-0015:
+  vulnerable:
+  - provider: aws
+    type: aws_iam_access_key
+    name: deploy
+    values:
+      user: deploy
+      create_date: '2020-01-01T00:00:00Z'
+  compliant:
+  - provider: aws
+    type: aws_iam_access_key
+    name: deploy
+    values:
+      user: deploy
+CLDR-0016:
+  vulnerable:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      publicly_accessible: true
+  compliant:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      publicly_accessible: false
+CLDR-0017:
+  vulnerable:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      storage_encrypted: false
+  compliant:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      storage_encrypted: true
+CLDR-0018:
+  vulnerable:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      backup_retention_period: 0
+  compliant:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      backup_retention_period: 14
+CLDR-0019:
+  vulnerable:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      deletion_protection: false
+  compliant:
+  - provider: aws
+    type: aws_db_instance
+    name: main
+    values:
+      deletion_protection: true
+CLDR-0020:
+  vulnerable:
+  - provider: aws
+    type: aws_ebs_volume
+    name: data
+    values:
+      encrypted: false
+  compliant:
+  - provider: aws
+    type: aws_ebs_volume
+    name: data
+    values:
+      encrypted: true
+CLDR-0021:
+  vulnerable:
+  - provider: aws
+    type: aws_cloudtrail
+    name: main
+    values:
+      enable_logging: false
+  compliant:
+  - provider: aws
+    type: aws_cloudtrail
+    name: main
+    values:
+      enable_logging: true
+CLDR-0022:
+  vulnerable:
+  - provider: aws
+    type: aws_cloudtrail
+    name: main
+    values:
+      is_multi_region_trail: false
+  compliant:
+  - provider: aws
+    type: aws_cloudtrail
+    name: main
+    values:
+      is_multi_region_trail: true
+CLDR-0023:
+  vulnerable:
+  - provider: aws
+    type: aws_kms_key
+    name: main
+    values:
+      enable_key_rotation: false
+  compliant:
+  - provider: aws
+    type: aws_kms_key
+    name: main
+    values:
+      enable_key_rotation: true
+CLDR-0024:
+  vulnerable:
+  - provider: aws
+    type: aws_lb_listener
+    name: http
+    values:
+      protocol: HTTP
+  compliant:
+  - provider: aws
+    type: aws_lb_listener
+    name: https
+    values:
+      protocol: HTTPS
+CLDR-0025:
+  vulnerable:
+  - provider: aws
+    type: aws_lambda_function
+    name: api
+    values:
+      environment:
+      - variables:
+          DB_PASSWORD: hunter2
+  compliant:
+  - provider: aws
+    type: aws_lambda_function
+    name: api
+    values:
+      environment:
+      - variables:
+          LOG_LEVEL: info
+CLDR-0026:
+  vulnerable:
+  - provider: aws
+    type: aws_vpc
+    name: main
+    values:
+      id: vpc-1
+  compliant:
+  - provider: aws
+    type: aws_vpc
+    name: main
+    values:
+      id: vpc-1
+  - provider: aws
+    type: aws_flow_log
+    name: main
+    values:
+      vpc_id: vpc-1
+CLDR-0027:
+  vulnerable:
+  - provider: aws
+    type: aws_sqs_queue
+    name: jobs
+    values:
+      sqs_managed_sse_enabled: false
+  compliant:
+  - provider: aws
+    type: aws_sqs_queue
+    name: jobs
+    values:
+      kms_master_key_id: alias/aws/sqs
+CLDR-0028:
+  vulnerable:
+  - provider: aws
+    type: aws_sns_topic
+    name: alerts
+    values: {}
+  compliant:
+  - provider: aws
+    type: aws_sns_topic
+    name: alerts
+    values:
+      kms_master_key_id: alias/aws/sns
+CLDR-0029:
+  vulnerable:
+  - provider: aws
+    type: aws_ecr_repository
+    name: app
+    values:
+      image_scanning_configuration:
+      - scan_on_push: false
+  compliant:
+  - provider: aws
+    type: aws_ecr_repository
+    name: app
+    values:
+      image_scanning_configuration:
+      - scan_on_push: true
+CLDR-0030:
+  vulnerable:
+  - provider: aws
+    type: aws_secretsmanager_secret
+    name: db
+    values:
+      name: db-password
+  compliant:
+  - provider: aws
+    type: aws_secretsmanager_secret
+    name: db
+    values:
+      name: db-password
+  - provider: aws
+    type: aws_secretsmanager_secret_rotation
+    name: db
+    values:
+      secret_id: db-password
+CLDR-0031:
+  vulnerable:
+  - provider: aws
+    type: aws_instance
+    name: web
+    values:
+      associate_public_ip_address: true
+      vpc_security_group_ids:
+      - sg-web
+    refs:
+    - aws_security_group.web.id
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      id: sg-web
+      ingress:
+      - from_port: 22
+        to_port: 22
+        protocol: tcp
+        cidr_blocks:
+        - 0.0.0.0/0
+        ipv6_cidr_blocks: []
+  compliant:
+  - provider: aws
+    type: aws_instance
+    name: web
+    values:
+      associate_public_ip_address: false
+      vpc_security_group_ids:
+      - sg-web
+    refs:
+    - aws_security_group.web.id
+  - provider: aws
+    type: aws_security_group
+    name: web
+    values:
+      id: sg-web
+      ingress:
+      - from_port: 22
+        to_port: 22
+        protocol: tcp
+        cidr_blocks:
+        - 10.0.0.0/8
+        ipv6_cidr_blocks: []
+CLDR-1001:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              securityContext:
+                privileged: true
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              securityContext:
+                privileged: false
+CLDR-1002:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              securityContext:
+                allowPrivilegeEscalation: true
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              securityContext:
+                allowPrivilegeEscalation: false
+CLDR-1003:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            securityContext:
+              runAsNonRoot: true
+CLDR-1004:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              securityContext:
+                capabilities:
+                  add:
+                  - SYS_ADMIN
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              securityContext:
+                capabilities:
+                  add: []
+                  drop:
+                  - ALL
+CLDR-1005:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            volumes:
+            - name: host
+              hostPath:
+                path: /var/run/docker.sock
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            volumes:
+            - name: cache
+              emptyDir: {}
+CLDR-1006:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            hostNetwork: true
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            hostNetwork: false
+CLDR-1007:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: nginx:latest
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: nginx:1.25.3
+CLDR-1008:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+CLDR-1009:
+  vulnerable:
+  - manifest:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: config
+        namespace: default
+      data:
+        k: v
+  compliant:
+  - manifest:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: config
+        namespace: prod
+      data:
+        k: v
+CLDR-1010:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            automountServiceAccountToken: true
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            automountServiceAccountToken: false
+CLDR-1011:
+  vulnerable:
+  - manifest:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: admin
+        namespace: prod
+      rules:
+      - apiGroups:
+        - '*'
+        resources:
+        - '*'
+        verbs:
+        - '*'
+  compliant:
+  - manifest:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: reader
+        namespace: prod
+      rules:
+      - apiGroups:
+        - ''
+        resources:
+        - configmaps
+        verbs:
+        - get
+        - list
+CLDR-1012:
+  vulnerable:
+  - manifest:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: alice
+      roleRef:
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: User
+        name: alice
+  compliant:
+  - manifest:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: alice
+      roleRef:
+        kind: ClusterRole
+        name: view
+      subjects:
+      - kind: User
+        name: alice
+CLDR-1013:
+  vulnerable:
+  - manifest:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: db
+        namespace: prod
+      data:
+        password: aHVudGVyMg==
+  compliant:
+  - manifest:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: db
+        namespace: prod
+      type: Opaque
+CLDR-1014:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              env:
+              - name: DB_PASSWORD
+                value: hunter2
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              env:
+              - name: DB_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: db
+                    key: password
+CLDR-1015:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            securityContext:
+              seccompProfile:
+                type: Unconfined
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+            securityContext:
+              seccompProfile:
+                type: RuntimeDefault
+CLDR-1016:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+              securityContext:
+                readOnlyRootFilesystem: true
+CLDR-1017:
+  vulnerable:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+  compliant:
+  - manifest:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        template:
+          spec:
+            containers:
+            - name: app
+              image: ghcr.io/dev-rudran/app:1.2.3
+  - manifest:
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: deny
+        namespace: prod
+      spec:
+        podSelector: {}
+CLDR-1018:
+  vulnerable:
+  - manifest:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: web
+        namespace: prod
+      spec:
+        type: LoadBalancer
+        ports:
+        - port: 80
+  compliant:
+  - manifest:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: web
+        namespace: prod
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-internal: 'true'
+      spec:
+        type: LoadBalancer
+        ports:
+        - port: 80

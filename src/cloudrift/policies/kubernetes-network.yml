@@ -1,0 +1,49 @@
+policies:
+  - id: CLDR-1017
+    title: Namespace has no NetworkPolicy
+    description: >-
+      A workload is deployed in a namespace without any NetworkPolicy. Pod
+      traffic is unrestricted by default, so a compromised pod can reach every
+      other pod and service in the cluster.
+    severity: medium
+    provider: kubernetes
+    resource:
+      - kubernetes_pod
+      - kubernetes_deployment
+      - kubernetes_stateful_set
+      - kubernetes_daemon_set
+      - kubernetes_replica_set
+      - kubernetes_replication_controller
+      - kubernetes_job
+      - kubernetes_cron_job
+    relations:
+      - type: kubernetes_network_policy
+        scope: namespace
+    assert: len(related) > 0
+    message: Namespace for workload {address} has no NetworkPolicy.
+    remediation: >-
+      Add a default-deny NetworkPolicy in the namespace, then allow the specific
+      ingress and egress paths the workload needs. Use a CNI that enforces
+      NetworkPolicy.
+    references:
+      - https://kubernetes.io/docs/concepts/services-networking/network-policies/
+    tags: [kubernetes, network, segmentation, relation]
+
+  - id: CLDR-1018
+    title: LoadBalancer Service has no internal annotation
+    description: >-
+      The Service requests a public load balancer without an internal-scheme
+      annotation. Confirm the service is intentionally exposed to the internet.
+    severity: info
+    provider: kubernetes
+    resource: kubernetes_service
+    assert: >-
+      resource.spec.type != "LoadBalancer"
+      or "service.beta.kubernetes.io/aws-load-balancer-internal" in (resource.metadata.annotations or {})
+    message: Service {address} is a LoadBalancer without an internal-scheme annotation.
+    remediation: >-
+      Use type ClusterIP with an Ingress for HTTP traffic, or annotate the
+      Service as internal when public exposure is not intended.
+    references:
+      - https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
+    tags: [kubernetes, network, exposure]

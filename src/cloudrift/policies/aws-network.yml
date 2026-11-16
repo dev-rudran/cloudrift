@@ -1,0 +1,198 @@
+policies:
+  - id: CLDR-0006
+    title: SSH is open to the internet
+    description: >-
+      A security group ingress rule allows SSH from a public CIDR. Internet
+      exposure of port 22 is routinely scanned and attacked.
+    severity: high
+    provider: aws
+    resource: &sg_resources
+      - aws_security_group
+      - aws_security_group_rule
+    assert: >-
+      not any(
+        is_public_cidr(cidr)
+        and (rule.protocol == "-1" or to_int(rule.from_port) <= 22 <= to_int(rule.to_port))
+        for rule in sg_ingress_rules(resource)
+        for cidr in ((rule.cidr_blocks or []) + (rule.ipv6_cidr_blocks or []))
+      )
+    message: Security group {name} allows SSH from a public range.
+    remediation: >-
+      Restrict the source to a bastion, VPN, or SSM Session Manager. Remove
+      0.0.0.0/0 and ::/0 ingress on port 22.
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html
+    tags: [ec2, network, ssh, public-access, cis-aws-5.2]
+
+  - id: CLDR-0007
+    title: RDP is open to the internet
+    description: >-
+      A security group ingress rule allows Remote Desktop from a public CIDR.
+    severity: high
+    provider: aws
+    resource: *sg_resources
+    assert: >-
+      not any(
+        is_public_cidr(cidr)
+        and (rule.protocol == "-1" or to_int(rule.from_port) <= 3389 <= to_int(rule.to_port))
+        for rule in sg_ingress_rules(resource)
+        for cidr in ((rule.cidr_blocks or []) + (rule.ipv6_cidr_blocks or []))
+      )
+    message: Security group {name} allows RDP from a public range.
+    remediation: >-
+      Front RDP with a bastion, VPN, or Fleet Manager, and restrict the source
+      range. Never allow 0.0.0.0/0 on port 3389.
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html
+    tags: [ec2, network, rdp, public-access, cis-aws-5.3]
+
+  - id: CLDR-0008
+    title: MySQL is open to the internet
+    description: >-
+      A security group ingress rule allows MySQL from a public CIDR, exposing
+      the database listener to the internet.
+    severity: high
+    provider: aws
+    resource: *sg_resources
+    assert: >-
+      not any(
+        is_public_cidr(cidr)
+        and (rule.protocol == "-1" or to_int(rule.from_port) <= 3306 <= to_int(rule.to_port))
+        for rule in sg_ingress_rules(resource)
+        for cidr in ((rule.cidr_blocks or []) + (rule.ipv6_cidr_blocks or []))
+      )
+    message: Security group {name} allows MySQL from a public range.
+    remediation: >-
+      Allow only application security groups or private CIDRs on port 3306.
+      Use a private subnet and a managed database endpoint.
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html
+    tags: [database, network, public-access]
+
+  - id: CLDR-0009
+    title: PostgreSQL is open to the internet
+    description: >-
+      A security group ingress rule allows PostgreSQL from a public CIDR,
+      exposing the database listener to the internet.
+    severity: high
+    provider: aws
+    resource: *sg_resources
+    assert: >-
+      not any(
+        is_public_cidr(cidr)
+        and (rule.protocol == "-1" or to_int(rule.from_port) <= 5432 <= to_int(rule.to_port))
+        for rule in sg_ingress_rules(resource)
+        for cidr in ((rule.cidr_blocks or []) + (rule.ipv6_cidr_blocks or []))
+      )
+    message: Security group {name} allows PostgreSQL from a public range.
+    remediation: >-
+      Allow only application security groups or private CIDRs on port 5432,
+      and keep the database in a private subnet.
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html
+    tags: [database, network, public-access]
+
+  - id: CLDR-0010
+    title: Security group allows all ports from the internet
+    description: >-
+      An ingress rule opens every port to a public CIDR, either with protocol
+      -1 or with a full 0-65535 port range.
+    severity: high
+    provider: aws
+    resource: *sg_resources
+    assert: >-
+      not any(
+        is_public_cidr(cidr)
+        and (
+          rule.protocol == "-1"
+          or (to_int(rule.from_port) <= 0 and to_int(rule.to_port) >= 65535)
+        )
+        for rule in sg_ingress_rules(resource)
+        for cidr in ((rule.cidr_blocks or []) + (rule.ipv6_cidr_blocks or []))
+      )
+    message: Security group {name} allows all ports from a public range.
+    remediation: >-
+      Replace all-port rules with explicit, least-privilege port and source
+      pairs. Reference other security groups instead of CIDR ranges where
+      possible.
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html
+    tags: [ec2, network, public-access, cis-aws-5.1]
+
+  - id: CLDR-0024
+    title: Load balancer listener uses HTTP
+    description: >-
+      The listener accepts plaintext HTTP traffic. Credentials, tokens, and
+      session data are exposed on the network.
+    severity: high
+    provider: aws
+    resource:
+      - aws_lb_listener
+      - aws_alb_listener
+    assert: upper(resource.protocol) != "HTTP"
+    message: Load balancer listener {name} uses the HTTP protocol.
+    remediation: >-
+      Serve traffic on HTTPS (port 443) with an ACM certificate and redirect
+      HTTP listeners with an SSL redirect action.
+    references:
+      - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html
+    tags: [elb, network, tls]
+
+  - id: CLDR-0026
+    title: VPC has no flow logs
+    description: >-
+      No aws_flow_log resource targets the VPC, so network flows are not
+      captured for incident response and anomaly detection.
+    severity: medium
+    provider: aws
+    resource: aws_vpc
+    relations:
+      - type: aws_flow_log
+        reference: true
+        via: id
+        target: vpc_id
+    assert: len(related) > 0
+    message: VPC {name} has no associated flow log.
+    remediation: >-
+      Create an aws_flow_log for the VPC that delivers to CloudWatch Logs or
+      S3, and set traffic_type = "ALL".
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html
+    tags: [vpc, network, logging, cis-aws-3.9]
+
+  - id: CLDR-0031
+    title: Public instance exposes SSH to the internet
+    description: >-
+      An instance with a public IP address is attached to a security group that
+      allows SSH from a public CIDR. The instance is directly reachable from the
+      internet on port 22.
+    severity: critical
+    provider: aws
+    resource: aws_instance
+    relations:
+      - type: aws_security_group
+        reference: true
+        via:
+          - vpc_security_group_ids
+          - security_groups
+        target: id
+    assert: >-
+      not (
+        resource.associate_public_ip_address is True
+        and any(
+          is_public_cidr(cidr)
+          and (rule.protocol == "-1" or to_int(rule.from_port) <= 22 <= to_int(rule.to_port))
+          for sg in related
+          for rule in sg_ingress_rules(sg)
+          for cidr in ((rule.cidr_blocks or []) + (rule.ipv6_cidr_blocks or []))
+        )
+      )
+    message: >-
+      Instance {name} has a public IP and a security group that allows SSH from
+      the internet.
+    remediation: >-
+      Remove the public IP, move the instance behind a load balancer or bastion,
+      and restrict port 22 to a private management range.
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-security-groups.html
+    tags: [ec2, network, ssh, public-access, relation]
