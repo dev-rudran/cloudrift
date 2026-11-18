@@ -23,6 +23,7 @@ from cloudrift.policy.loader import (
     validate_policies,
 )
 from cloudrift.report.console import render_console
+from cloudrift.report.html import render_html
 from cloudrift.report.json_report import render_json
 from cloudrift.report.markdown import render_markdown
 from cloudrift.report.sarif import render_sarif
@@ -53,9 +54,9 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument(
         "--format",
         "-f",
-        choices=("console", "json", "md", "markdown", "sarif"),
-        default="console",
-        help="report format (default: console)",
+        choices=("console", "json", "md", "markdown", "sarif", "html"),
+        default=None,
+        help="report format (default: console, or html when --output ends in .html)",
     )
     scan.add_argument("-o", "--output", help="write the report to a file")
     scan.add_argument(
@@ -147,8 +148,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run_scan(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
-    if args.format == "markdown":
-        args.format = "md"
+    args.format = _resolve_format(args.format, args.output)
 
     if args.list_rules:
         policies = _load_policies(args.policy_dir)
@@ -254,6 +254,18 @@ def _run_scan(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     return context.exit_code
 
 
+def _resolve_format(output_format: str | None, output: str | None) -> str:
+    if output_format == "markdown":
+        return "md"
+    if output_format:
+        return output_format
+    if output:
+        suffix = Path(output).suffix.lower()
+        if suffix in {".html", ".htm"}:
+            return "html"
+    return "console"
+
+
 def _render(
     context: ScanContext,
     output_format: str,
@@ -268,6 +280,8 @@ def _render(
         return render_markdown(context)
     if output_format == "sarif":
         return render_sarif(context)
+    if output_format == "html":
+        return render_html(context)
     return render_console(context, color=color, quiet=quiet, stats=stats)
 
 

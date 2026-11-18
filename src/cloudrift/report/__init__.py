@@ -1,1 +1,1 @@
-"""Report writers for console, JSON, Markdown and SARIF output."""
+"""Report writers for console, JSON, Markdown, HTML and SARIF output."""

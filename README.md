@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/badge/policies-49-fb923c" alt="49 policies">
   <img src="https://img.shields.io/badge/SARIF-2.1.0-6f42c1" alt="SARIF 2.1.0">
-  <img src="https://img.shields.io/badge/tests-390%20passing-brightgreen" alt="390 tests passing">
+  <img src="https://img.shields.io/badge/tests-398%20passing-brightgreen" alt="398 tests passing">
 </p>
 
 `cloudrift` is a policy-as-code misconfiguration scanner for Terraform plan and
@@ -23,8 +23,8 @@ dangerous change is applied.
 - **Kubernetes-aware.** Handles multi-document YAML, `List` objects, workload
   templates, RBAC, namespaces, and source line tracking.
 - **Safe policy language.** A validated expression interpreter, never `eval`.
-- **Built for automation.** Console, JSON, Markdown, and SARIF 2.1.0 output,
-  severity gates, expiring ignores, and baselines for existing debt.
+- **Built for automation.** Console, JSON, Markdown, HTML, and SARIF 2.1.0
+  output, severity gates, expiring ignores, and baselines for existing debt.
 
 ## Install
 
@@ -167,6 +167,7 @@ Read from stdin and write SARIF for code scanning:
 ```console
 $ terraform show -json plan.tfplan | cloudrift scan - --format sarif --output cloudrift.sarif
 $ cloudrift scan manifests/ --format json --severity medium --fail-on high
+$ cloudrift scan examples/vulnerable --format html --output cloudrift.html
 ```
 
 ## What it scans
@@ -230,8 +231,8 @@ Frequently used scan options:
 
 | Option | Purpose |
 | --- | --- |
-| `--format, -f` | `console`, `json`, `md`, `markdown`, or `sarif`. |
-| `--output, -o` | Write the report to a file instead of stdout. |
+| `--format, -f` | `console`, `json`, `md`, `markdown`, `sarif`, or `html`. |
+| `--output, -o` | Write the report to a file. A `.html` path selects HTML by default. |
 | `--severity` | Report and gate only at or above this severity. |
 | `--fail-on` | Exit 1 at this severity, or `never`. Defaults to `high`. |
 | `--policy-dir` | Replace the bundled pack with a file or directory. |
@@ -315,6 +316,13 @@ logical locations, help URIs, and partial fingerprints for deduplication.
 `--format markdown` writes a table-oriented report suitable for pull request
 comments and job summaries. Markdown cells are escaped so resource names cannot
 inject HTML or break tables.
+
+### HTML
+
+`--format html` writes one self-contained file with inline CSS and JavaScript.
+Severity filters, free-text search, and severity grouping work offline with no
+external requests. A `.html` or `.htm` output path selects this format when
+`--format` is omitted.
 
 ## Configuration
 
@@ -451,7 +459,7 @@ flowchart LR
     C --> D
     D --> E[Findings and evaluation errors]
     E --> F[Ignores and baseline]
-    F --> G[Console, JSON, Markdown, SARIF]
+    F --> G[Console, JSON, Markdown, HTML, SARIF]
     F --> H[Exit 0, 1, or 2]
 ```
 

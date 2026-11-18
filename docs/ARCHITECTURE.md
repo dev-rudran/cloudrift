@@ -65,6 +65,7 @@ src/cloudrift/
     builtins.py          pure helper functions exposed to policies
   report/
     console.py           human-readable report
+    html.py              self-contained offline HTML report
     json_report.py       stable machine schema
     markdown.py          pull-request friendly report
     sarif.py             SARIF 2.1.0 for code scanning
@@ -207,6 +208,9 @@ All formats receive the same `ScanContext`:
   fields, resource metadata, suppressed findings, stale ignores, errors, and a
   summary that includes baseline and gate data.
 - **Markdown** is a table-oriented report with escaped cells.
+- **HTML** is a single self-contained document with inline CSS and JavaScript,
+  escaped content, and client-side severity and text filters. It makes no
+  external requests.
 - **SARIF** 2.1.0 includes rule metadata, severity-to-level mapping, locations,
   and fingerprints so GitHub code scanning can deduplicate results.
 
@@ -223,7 +227,7 @@ Colors are enabled only for an interactive terminal without `NO_COLOR` or
   no `eval`, `exec`, `compile`, import, attribute traversal into internals, or
   access to the filesystem, environment, or network.
 - Reports escape untrusted resource names, messages, and paths for terminal,
-  Markdown, JSON, and SARIF contexts.
+  Markdown, HTML, JSON, and SARIF contexts.
 - Inputs are treated as untrusted data. Path traversal is not meaningful because
   only explicitly supplied paths and their descendants are read, but discovery
   skips VCS, dependency, and virtual environment directories.
