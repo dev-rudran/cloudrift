@@ -26,6 +26,8 @@ dangerous change is applied.
 - **Built for automation.** Console, JSON, Markdown, HTML, and SARIF 2.1.0
   output, severity gates, expiring ignores, and baselines for existing debt.
 
+See [docs/QUICKSTART.md](docs/QUICKSTART.md) for a five-minute walkthrough.
+
 ## Install
 
 Python 3.10 or newer is required. The only runtime dependency is PyYAML.
