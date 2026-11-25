@@ -32,7 +32,7 @@ dependencies = ["PyYAML>=6.0"]
 dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
-    "ruff>=0.6",
+    "ruff>=0.17.6",
     "bandit>=1.7",
     "build>=1.2",
 ]
